@@ -2,82 +2,66 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotoExpress Cutervo</title>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: #f0f4f7; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background-color: #f0f4f7; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .card { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
-        h1 { color: #128C7E; font-size: 26px; margin: 10px 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        p { color: #666; font-weight: bold; margin-bottom: 20px; }
-        input { padding: 18px; width: 100%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; box-sizing: border-box; outline: none; }
-        input:focus { border-color: #25d366; }
-        .btn-pedir { background-color: #25d366; color: white; border: none; padding: 20px; font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
-        .btn-pedir:active { background-color: #128C7E; transform: scale(0.98); }
-        #loading { display: none; margin-top: 15px; color: #128C7E; font-weight: bold; }
+        h1 { color: #128C7E; font-size: 24px; margin-bottom: 5px; }
+        input { padding: 15px; width: 100%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; box-sizing: border-box; outline: none; }
+        .btn-pedir { background-color: #25d366; color: white; border: none; padding: 18px; font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); }
+        #status { display: none; margin-top: 15px; color: #128C7E; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h1><span>🛺</span> MotoExpress</h1>
-        <p>Cutervo - Pide tu moto a casa</p>
-        
-        <input type="text" id="nombreCliente" placeholder="Tu Nombre y Dirección (Ej: Jerry Jiron San Ramon)">
-        
-        <button class="btn-pedir" id="btnAccion" onclick="enviarYa()">SOLICITAR AHORA</button>
-        
-        <div id="loading">⏳ Abriendo WhatsApp...</div>
+        <div style="font-size: 50px;">🛺</div>
+        <h1>MotoExpress</h1>
+        <p><b>Cutervo</b> - Pide tu moto ahora</p>
+        <input type="text" id="nombreCliente" placeholder="Escribe tu Nombre y Referencia">
+        <button class="btn-pedir" onclick="solicitarMoto()">SOLICITAR AHORA</button>
+        <div id="status">📍 Obteniendo tu ubicación...</div>
     </div>
 
     <script>
-        function enviarYa() {
+        function solicitarMoto() {
             const nombre = document.getElementById('nombreCliente').value.trim();
-            const btn = document.getElementById('btnAccion');
-            const load = document.getElementById('loading');
+            const status = document.getElementById('status');
             
+            // EL SECRETO: Usamos el enlace de tu grupo directamente
+            const enlaceGrupo = "https://chat.whatsapp.com/Is7tzEKcczvCoOs8HhJYmk";
+
             if (nombre === "") {
-                alert("Por favor, escribe tu nombre y dirección.");
+                alert("Por favor, ingresa tu nombre.");
                 return;
             }
 
-            // Cambiar aspecto para confirmar el clic
-            btn.disabled = true;
-            btn.innerText = "ENVIANDO...";
-            load.style.display = "block";
-
-            // Enlace de tu grupo MotoExpress
-            const idGrupo = "Is7tzEKcczvCoOs8HhJYmk";
-            let mensajeBase = `🛺 *NUEVO PEDIDO DE MOTO*\n--------------------------\n👤 *Cliente:* ${nombre}\n--------------------------\n✅ _Favor de confirmar tiempo de llegada._`;
-
-            // Función única para enviar
-            const finalizar = (urlMap = "") => {
-                let mensajeFinal = mensajeBase;
-                if (urlMap) mensajeFinal += `\n📍 *Ubicación GPS:* ${urlMap}`;
-                
-                const linkWA = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensajeFinal)}`;
-                window.location.href = linkWA;
-            };
-
-            // Intentar GPS pero con un tiempo de espera de apenas 1 segundo
             if (navigator.geolocation) {
-                const timeoutGPS = setTimeout(() => {
-                    finalizar(); // Si el GPS no responde en 1 seg, envía solo el texto
-                }, 1200);
+                status.style.display = "block";
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // Creamos el mapa con marcador exacto
+                    const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                    
+                    const mensaje = `🛺 *NUEVO PEDIDO DE MOTO*\n` +
+                                    `--------------------------\n` +
+                                    `👤 *Cliente:* ${nombre}\n` +
+                                    `📍 *Ubicación:* ${mapsUrl}\n` +
+                                    `--------------------------\n` +
+                                    `✅ _Favor de confirmar tiempo de llegada._`;
+                    
+                    // Redirección directa al grupo con el texto pre-cargado
+                    window.location.href = `${enlaceGrupo}?text=${encodeURIComponent(mensaje)}`;
 
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        clearTimeout(timeoutGPS);
-                        const gpsLink = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                        finalizar(gpsLink);
-                    },
-                    () => {
-                        clearTimeout(timeoutGPS);
-                        finalizar(); // Error de permiso, envía solo texto
-                    },
-                    { enableHighAccuracy: true, timeout: 1000 }
-                );
+                }, function(error) {
+                    alert("Para pedir la moto, activa el GPS de tu celular.");
+                    status.style.display = "none";
+                }, { enableHighAccuracy: true });
             } else {
-                finalizar(); // No hay soporte GPS, envía solo texto
+                alert("Tu celular no permite usar GPS.");
             }
         }
     </script>
