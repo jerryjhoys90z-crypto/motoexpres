@@ -5,74 +5,68 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotoExpress Cutervo</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; background-color: #f0f4f7; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
-        h1 { color: #128C7E; font-size: 26px; }
-        input { padding: 15px; width: 100%; margin-bottom: 20px; border-radius: 12px; border: 2px solid #eee; font-size: 16px; box-sizing: border-box; outline: none; }
-        .btn-pedir { background-color: #25d366; color: white; border: none; padding: 20px; font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold; }
-        #status { display: none; margin-top: 15px; color: #128C7E; font-weight: bold; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; background-color: #eef2f3; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
+        h1 { color: #128C7E; margin-bottom: 10px; }
+        .btn-pedir { 
+            background-color: #25d366; color: white; border: none; padding: 20px 30px; 
+            font-size: 18px; border-radius: 50px; cursor: pointer; width: 100%; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4); transition: 0.3s;
+        }
+        .btn-pedir:hover { background-color: #128C7E; }
+        input { padding: 15px; width: 90%; margin-bottom: 20px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; }
+        .loader { display: none; margin-top: 15px; color: #666; font-style: italic; }
     </style>
 </head>
 <body>
 
     <div class="card">
         <h1>🛺 MotoExpress</h1>
-        <p><b>Cutervo</b> - Pide tu moto ahora</p>
+        <p><b>Cutervo</b> - Pide tu moto a casa</p>
+        
         <input type="text" id="nombreCliente" placeholder="Tu Nombre y Dirección">
-        <button class="btn-pedir" id="btnAccion" onclick="procesarPedido()">SOLICITAR AHORA</button>
-        <div id="status">⏳ Procesando pedido...</div>
+        
+        <button class="btn-pedir" onclick="enviarAlGrupo()">SOLICITAR AHORA</button>
+        
+        <div id="status" class="loader">Ubicando tu posición...</div>
     </div>
 
     <script>
-        function procesarPedido() {
-            const nombre = document.getElementById('nombreCliente').value.trim();
+        function enviarAlGrupo() {
+            const nombre = document.getElementById('nombreCliente').value;
             const status = document.getElementById('status');
-            const boton = document.getElementById('btnAccion');
 
             if (nombre === "") {
-                alert("Por favor, ingresa tu nombre y dirección.");
+                alert("Por favor, pon tu nombre para que el chofer te reconozca.");
                 return;
             }
 
-            boton.disabled = true;
-            status.style.display = "block";
-
-            // Intentamos obtener el GPS rápido
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        const mapsUrl = `https://www.google.com/maps?q=${lat},${lon}`;
-                        enviarChat(nombre, mapsUrl);
-                    },
-                    () => {
-                        // Si el GPS falla, enviamos sin mapa para no trabar la app
-                        enviarChat(nombre, null);
-                    },
-                    { enableHighAccuracy: true, timeout: 3000 }
-                );
+                status.style.display = "block";
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    // URL de Google Maps para el chofer
+                    const mapsUrl = https://www.google.com/maps?q=${lat},${lon};
+                    
+                    // TEXTO QUE APARECERÁ EN EL GRUPO
+                    const mensaje = 🛺 *NUEVO PEDIDO DE MOTO*%0A--------------------------%0A👤 *Cliente:* ${nombre}%0A📍 *Ubicación:* ${mapsUrl}%0A--------------------------%0A✅ _El primero en responder este mensaje se lleva el viaje._;
+                    
+                    // REEMPLAZA ESTO con tu enlace de invitación al grupo
+                    // Pero ojo: Solo usaremos la parte final del código del enlace
+                    // Por ejemplo si es: chat.whatsapp.com/CptfV4p...
+                    // Usaremos el formato wa.me con el texto
+                    
+                    // OPCIÓN MÁS SEGURA: Enviar a un número central que luego automatice o directo al API
+                    window.location.href = https://api.whatsapp.com/send?text=${mensaje};
+
+                }, function(error) {
+                    status.innerHTML = "❌ Error: Activa tu GPS para pedir la moto.";
+                });
             } else {
-                enviarChat(nombre, null);
+                alert("Tu celular no tiene GPS.");
             }
-        }
-
-        function enviarChat(nombre, ubicacion) {
-            // MENSAJE FORMATEADO
-            let mensaje = `🛺 *NUEVO PEDIDO DE MOTO*\n`;
-            mensaje += `👤 *Cliente:* ${nombre}\n`;
-            if (ubicacion) {
-                mensaje += `📍 *Ubicación:* ${ubicacion}\n`;
-            }
-            mensaje += `✅ _Favor de confirmar tiempo de llegada._`;
-
-            // CAMBIO CLAVE: Usamos 'wa.me' en lugar de 'chat.whatsapp.com' para que el texto NO se borre.
-            // Nota: Para grupos, WhatsApp a veces obliga a elegir el chat. 
-            // La mejor opción es que el mensaje se pegue solo:
-            
-            const urlFinal = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
-            
-            window.location.href = urlFinal;
         }
     </script>
 </body>
