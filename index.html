@@ -4,98 +4,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MotoExpress Cutervo</title>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f4f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: white; padding: 30px; border-radius: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 90%; max-width: 350px; text-align: center; }
-        .logo { font-size: 50px; margin-bottom: 10px; }
-        h1 { color: #128C7E; margin: 0; font-size: 24px; }
-        input { width: 100%; padding: 15px; margin: 20px 0; border: 2px solid #eee; border-radius: 12px; box-sizing: border-box; font-size: 16px; outline: none; }
-        .btn { background-color: #128C7E; color: white; border: none; padding: 18px; width: 100%; border-radius: 50px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        #status { margin-top: 15px; color: #666; font-size: 14px; display: none; }
+        body { font-family: sans-serif; background-color: #e5ddd5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); text-align: center; width: 320px; }
+        h1 { color: #075e54; margin-bottom: 5px; }
+        input { width: 100%; padding: 15px; margin: 15px 0; border: 1px solid #ccc; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        .btn { background-color: #25d366; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        #carga { display: none; margin-top: 10px; color: #666; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <div class="logo">🛺</div>
+    <div style="font-size: 50px;">🛺</div>
     <h1>MotoExpress</h1>
-    <p><b>Cutervo</b> - Pide tu moto ahora</p>
-    <input type="text" id="nombre" placeholder="Nombre y Referencia">
-    <button class="btn" id="btnPedir" onclick="solicitarMoto()">SOLICITAR AHORA</button>
-    <div id="status">📍 Localizando... (Un momento)</div>
+    <p>Cutervo</p>
+    <input type="text" id="datos" placeholder="Tu nombre y dirección">
+    <button class="btn" onclick="enviarPedido()">PEDIR MOTO</button>
+    <div id="carga">Obteniendo ubicación... un momento</div>
 </div>
 
 <script>
-    // TU CONFIGURACIÓN DE FIREBASE
-    const firebaseConfig = {
-        apiKey: "AIzaSyAw3gYn2nQb5BGHqOYvkT16NJJB2tVFyoY",
-        authDomain: "motoexpress-5e3dd.firebaseapp.com",
-        projectId: "motoexpress-5e3dd",
-        storageBucket: "motoexpress-5e3dd.firebasestorage.app",
-        messagingSenderId: "826351837848",
-        appId: "1:826351837848:web:d9e1f7065f0b0af396e6ed"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    function solicitarMoto() {
-        const nombre = document.getElementById('nombre').value.trim();
-        const btn = document.getElementById('btnPedir');
-        const status = document.getElementById('status');
-
-        if (nombre === "") {
-            alert("Escribe tu nombre para enviarte la moto.");
+    function enviarPedido() {
+        const info = document.getElementById('datos').value;
+        if (info === "") {
+            alert("Por favor escribe tu dirección");
             return;
         }
 
-        btn.disabled = true;
-        btn.innerText = "ENVIANDO...";
-        status.style.display = "block";
+        document.getElementById('carga').style.display = "block";
 
-        // SI EL GPS TARDA MÁS DE 4 SEGUNDOS, ENVIA SIN GPS
-        let gpsEncontrado = false;
-        const timerSeguridad = setTimeout(() => {
-            if (!gpsEncontrado) {
-                enviarFinal(nombre, null);
-            }
-        }, 4000);
-
+        // Intentamos obtener el GPS rápido
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((pos) => {
-                gpsEncontrado = true;
-                clearTimeout(timerSeguridad);
-                const mapa = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                enviarFinal(nombre, mapa);
-            }, () => {
-                gpsEncontrado = true;
-                clearTimeout(timerSeguridad);
-                enviarFinal(nombre, null);
-            }, { timeout: 3500 });
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    const linkMapa = `https://www.google.com/maps?q=${lat},${lon}`;
+                    abrirWhatsapp(info, linkMapa);
+                },
+                (error) => {
+                    // Si falla el GPS, enviamos solo el texto
+                    abrirWhatsapp(info, "El cliente no compartió GPS");
+                },
+                { timeout: 5000 } // Solo esperamos 5 segundos el GPS
+            );
         } else {
-            enviarFinal(nombre, null);
+            abrirWhatsapp(info, "GPS no soportado");
         }
     }
 
-    function enviarFinal(nombre, mapa) {
-        const ubiTexto = mapa ? mapa : "No compartida (preguntar al cliente)";
-        
-        // 1. Guardar en Base de Datos
-        db.collection("pedidos").add({
-            cliente: nombre,
-            ubicacion: ubiTexto,
-            hora: new Date().toLocaleString(),
-            estado: "Pendiente"
-        }).then(() => {
-            // 2. Abrir WhatsApp
-            const msg = `🛺 *NUEVO PEDIDO DE MOTO*\n\n👤 *Cliente:* ${nombre}\n📍 *Ubicación:* ${ubiTexto}\n\n✅ _Confirmar pedido por favor._`;
-            window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-        }).catch(() => {
-            alert("Error de conexión, intenta de nuevo.");
-            location.reload();
-        });
+    function abrirWhatsapp(cliente, mapa) {
+        const mensaje = `🛺 *NUEVO PEDIDO DE MOTO*\n\n👤 *Cliente:* ${cliente}\n📍 *Ubicación:* ${mapa}`;
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensaje)}`;
+        window.location.href = url;
     }
 </script>
 
